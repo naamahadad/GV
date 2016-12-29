@@ -6,7 +6,7 @@ Created on Thu Dec 15 13:37:17 2016
 """
 
 from keras.layers.normalization import BatchNormalization
-from keras.optimizers import SGD, Adam, Adadelta
+from keras.optimizers import SGD, Adam, Adadelta,RMSprop
 from keras.layers.advanced_activations import LeakyReLU
 from keras.utils import np_utils
 from keras.objectives import categorical_crossentropy
@@ -53,8 +53,8 @@ class DistNet(object):
         #Enc ########################################
         #h = Dense(intermediate_dim,init='glorot_uniform')(in_x)#, activation='relu'
         #h = Dense(intermediate_dim,init='glorot_uniform')(h)
-        z_mean = Dense(latent_dim,init='zero')(in_x)
-        z_log_var = Dense(latent_dim,init='zero')(in_x)
+        z_mean = Dense(latent_dim,init='glorot_uniform')(in_x)
+        z_log_var = Dense(latent_dim,init='glorot_uniform')(in_x)
         s = Dense(s_dim)(in_x)
         
         self.VAEencS = Model(in_x, output=[z_mean,z_log_var,s])
@@ -66,7 +66,7 @@ class DistNet(object):
         inz_s = merge([in_z, in_s], mode='concat', concat_axis=1)
         #decoder_h = Dense(intermediate_dim)(inz_s)#, activation='relu'
         #decoder_h = Dense(intermediate_dim)(decoder_h)#, activation='relu'
-        x_decoded_mean = Dense(original_dim,init='zero')(inz_s)#, activation='relu'
+        x_decoded_mean = Dense(original_dim,init='glorot_uniform')(inz_s)#, activation='relu'
         #x_decoded_log_std = Dense(original_dim, activation='relu',init='glorot_uniform')(decoder_h)
         #logpxz = 0.5* tf.reduce_sum(x_decoded_log_std + tf.square(in_x - x_decoded_mean)/tf.exp(x_decoded_log_std))
         
@@ -153,8 +153,9 @@ class DistNet(object):
         self.DistNet = Model([x1,x1t,x2,zn,in_lbl], [x11,x11t,x12,xp2,Adv1,Adv2])
         self.freeze_unfreeze_Adv(False)
         self.freeze_unfreeze_EncDec(True)
-        #opt = Adam(lr=0.001, beta_1=0.5)
-        self.DistNet.compile(optimizer='sgd', loss=['mse','mse',loss3,loss3,'binary_crossentropy','binary_crossentropy'],
+        opt = Adam(lr=0.01, beta_1=0.5)
+        #opt = RMSprop(lr=0.0001)
+        self.DistNet.compile(optimizer=opt, loss=['mse','mse',loss3,loss3,'binary_crossentropy','binary_crossentropy'],
                              loss_weights=[recweight,swap1weight,klweightZ,0,swap2weight,swap2weight])#loss=enc_dec_loss)   
     
         self.AdvNet = Model([x12in,xp2in,in_lbl],[Adv1_netAdv,Adv2_netAdv])
@@ -196,7 +197,7 @@ class DistNet(object):
                 zn=np.random.randn(self.params['batch_size'],self.params['latent_dim'])
                 #uh = 2
                 #if mb % uh == 0:
-                loss0 += self.DistNet.train_on_batch([X1,X1t,X2,zn,lbls],[X1,X1t,X2,zn,np.zeros((self.params['batch_size'],1)),np.zeros((self.params['batch_size'],1))])[0]
+                loss0 += self.DistNet.train_on_batch([X1,X1t,X2,zn,lbls],[X1,X1,X2,zn,np.zeros((self.params['batch_size'],1)),np.zeros((self.params['batch_size'],1))])[0]
 
                 X11,X11t,X12,Xp2,adv1,adv2 = self.DistNet.predict([X1,X1t,X2,zn,lbls],batch_size=self.params['batch_size'])
                 #if e==0 and first==0:

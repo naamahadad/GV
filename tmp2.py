@@ -35,7 +35,7 @@ params['years_dict'] = {'train_top' : 2012, # 2009
 params['recweight'] = 0.5
 params['swap1weight'] = 1
 params['swap2weight'] = 0#.1#0.01
-params['klweightZ'] = 0.1#0.1
+params['klweightZ'] = 0#0.1
 
 batch_size = 100
 nb_epoch = 5000
@@ -43,8 +43,8 @@ params['batch_size'] = batch_size
 params['nb_epoch'] = nb_epoch
 
 params['original_dim'] = 5
-params['latent_dim'] = 3
-params['intermediate_dim'] = 5
+params['latent_dim'] = 5
+params['intermediate_dim'] = 7
 params['s_dim'] = 2
 params['l_size'] = 5
 
@@ -78,23 +78,23 @@ num_ids=10
 nSamples = 100000
 sig = 0
 s_rand = np.random.randint(-num_ids/2,num_ids/2+1,(nSamples,params['s_dim'] ))
-z_rand = np.random.randn(nSamples,params['latent_dim'])
-x1_z = np.repeat(z_rand,1,axis=1) + sig*np.random.rand(z_rand.shape[0],params['latent_dim']*1)
+z_rand = np.random.randn(nSamples,3)#params['latent_dim'])
+x1_z = np.repeat(z_rand,1,axis=1) + sig*np.random.rand(z_rand.shape[0],3*1)
 x1_s = np.repeat(s_rand,1,axis=1) + sig*np.random.rand(s_rand.shape[0],params['s_dim']*1)
 x1_z[:,:1] = x1_z[:,:1] + x1_s[:,:1]
 x1_z[:,1:2] = x1_z[:,1:2] + x1_s[:,1:2]
 x1 = np.concatenate((x1_z,x1_s),axis=1)
 
-z_rand = np.random.randn(nSamples,params['latent_dim'])
-x2_z=np.repeat(z_rand,1,axis=1) + sig*np.random.rand(z_rand.shape[0],params['latent_dim']*1)
+z_rand = np.random.randn(nSamples,3)#params['latent_dim'])
+x2_z=np.repeat(z_rand,1,axis=1) + sig*np.random.rand(z_rand.shape[0],3*1)
 x2_z[:,:1] = x2_z[:,:1] + x1_s[:,:1]
 x2_z[:,1:2] = x2_z[:,1:2] + x1_s[:,1:2]
 x2 = np.concatenate((x2_z,x1_s),axis=1)
 
-z_rand = np.random.randn(nSamples,params['latent_dim'])
+z_rand = np.random.randn(nSamples,3)#params['latent_dim'])
 s_add = np.random.randint(1,num_ids,(nSamples,params['s_dim'] ))
 s_rand = np.mod(s_rand+num_ids/2+s_add,num_ids)-num_ids/2
-x3_z = np.repeat(z_rand,1,axis=1) + sig*np.random.rand(z_rand.shape[0],params['latent_dim']*1)
+x3_z = np.repeat(z_rand,1,axis=1) + sig*np.random.rand(z_rand.shape[0],3*1)
 x3_s = np.repeat(s_rand,1,axis=1) + sig*np.random.rand(s_rand.shape[0],params['s_dim']*1)
 x3_z[:,:1] = x3_z[:,:1] + x3_s[:,:1]
 x3_z[:,1:2] = x3_z[:,1:2] + x3_s[:,1:2]
