@@ -22,7 +22,7 @@ def extract_data_stock(ind,df,stepsize=250):
     df.RET = df.RET.where(~mask, other=0)
     #cur_year = applyParallel(df.groupby(df['date'].map(lambda x: x.year)),get_year_data)
     cur_rets = (df['RET'].values).astype(numpy.float16) # convert to flpat32 to save memory
-    cur_prices_wo_adj = (df['RET'].values).astype(numpy.float32)#need to add price col
+    cur_prices_wo_adj = (df['PRC'].values).astype(numpy.float32)#need to add price col
 
     #if cur_rets.size < min_size:
     #    return pd.DataFrame()
@@ -79,7 +79,10 @@ def extract_data_stock(ind,df,stepsize=250):
     # convert to pandas dataframe
     days_cols = ['day'+str(i) for i in range(0,stepsize)]
     cur_symbol = df['TICKER'].values[0]
-    cur_permno = df['PERMNO'].values[0]
+    cur_permno = df['PERMCO'].values[0]
+    cur_mv = df['PRC'].values[0]*df['SHROUT'].values[0]
+    #cur_vol = df['PRC'].values[0]*df['VOL'].values[0]
+    cur_sector = df['SICCD'].values[0]#numpy.floor(df['SICCD'].values[0]/100)
     #days_cols_vol = ['vol_day'+str(i) for i in range(stepsize-num_vols,stepsize)]
 
     sw_rets = numpy.expand_dims(sw_rets, axis=0)
@@ -92,6 +95,8 @@ def extract_data_stock(ind,df,stepsize=250):
     df.insert(3,'avg_volume',avgvol)
     df.insert(4,'last_price',last_price)
     df.insert(5,'avgprice',avgprice)
+    df.insert(6,'market',cur_mv)
+    df.insert(7,'sector',cur_sector)
     #for col_label,vol_ind in zip(days_cols_vol,range(cur_vols.shape[1])):
     #    df.insert(len(df.columns),col_label,cur_vols[:,vol_ind])    
     #df.insert(len(df.columns),'pred_day_ret',cur_nextdayrets)
@@ -129,32 +134,32 @@ def analyze_date(ind,df):
 start_time = time.time()
 home = os.path.expanduser('~')
 
-debug = True
+debug = False
 num_days = 250
 num_vols = 10
 num_workers = 1
 
 if debug: 
-    prices_filename = home + '/FinData/CSVs/DailyShort.csv'
+    prices_filename = '/media/data2/naamahadad/CSVs/Short.csv'
 else:
-    prices_filename = home + '/FinData/nas_prices.csv' if len(sys.argv) < 2 else sys.argv[1]
+    prices_filename = '/media/data2/naamahadad/CSVs/2016.csv' if len(sys.argv) < 2 else sys.argv[1]
 
 #link_filename =  home + '/FinData/CSVs/DailyShort.csv'
-save_filename = home + '/FinData/prices_debug.hdf' if len(sys.argv) < 3 else sys.argv[2]
+save_filename = '/media/data2/naamahadad/PyData/2016.hdf' if len(sys.argv) < 3 else sys.argv[2]
 
 print 'prices_filename',prices_filename
 print 'save_filename',save_filename
 
 prices = pd.read_csv(prices_filename)#permno,date(yyyymmdd),exchcd,TICKER,VOL,RET
-prices = prices.drop(['EXCHCD'],axis=1) #,'VOL'
+prices = prices.drop(['EXCHCD','PERMNO'],axis=1) #,'VOL'
 #prices = prices.drop(prices.columns[[2,3,4],axis=1) 
 prices['date'] = pd.to_datetime(prices['date'].values.astype(numpy.str))
 
-prices = prices.sort(columns=['PERMNO','TICKER','date']) # sort by symbol, then by date
+prices = prices.sort(columns=['PERMCO','TICKER','date']) # sort by symbol, then by date
 #uniqe_stocks = pd.unique(pd.concat((prices['PERMNO'],prices['TICKER']),axis=1))
 
 #if debug: uniqe_stocks = uniqe_stocks[0:50]
-final_df = applyParallel(prices.groupby(['PERMNO','TICKER',prices['date'].map(lambda x: x.year)]),extract_data_stock)
+final_df = applyParallel(prices.groupby(['PERMCO','TICKER',prices['date'].map(lambda x: x.year)]),extract_data_stock)
 
 ##all_dfs = []
 ##for ind,unq in enumerate(uniqe_stocks):

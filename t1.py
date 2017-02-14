@@ -19,45 +19,40 @@ import DistNet
 home = os.path.expanduser('~')
 
 params = {}
-debug = True
+debug = False
 
 params['config_file'] = sys.argv[1] if len(sys.argv)>1 else 'config_adam_epoch5000.yaml'
-params['data'] = '/media/data2/naamahadad/PyData/1976_2016.hdf'#[home +'/FinData/prices_debug.hdf']
+params['data'] = home + '/FinData/Beast/1996_2015.hdf'#[home +'/FinData/prices_debug.hdf']
+#params['data'] = '/media/data2/naamahadad/PyData/1996_2015.hdf'
 
 #with open('yamls/' + params['config_file'],'r') as f:
 #    params.update(yaml.load(f))
 
-params['res_path'] = '/media/data2/naamahadad/results/MainVAE'
+params['res_path'] = home + '/results_nn/VAE'
+#params['res_path'] = '/media/data2/naamahadad/results/Debug'
 params['years_dict'] = {'train_top' : 2012, # 2009
                       'test_bottom' : 2013, # 2010
                       'test_top' : 2015} # 2012
-valid_years = np.arange(2010,2017,1)#np.arange(1986,2016,1)#xrange(31)+1985#[1985,1990,1995,2000,2005,2010,2015]
 params['BN'] = True
-params['Init'] = 'glorot_normal'
-params['Activation'] = 'tanh'
+params['Init'] = 'glorot_uniform'
+params['Activation'] = 'LeakyReLU'
 
-params['recweight'] = 50#50#0.5#135,45
-params['swap1weight'] = 100#100#1#280,93
-params['swap2weight'] = 0.5#0.5#5#1#0.01#1.2,1.14
-params['klweightZ'] = 0#0#0.5#0.25#10#0.1#0.121-->0,0.176
-params['prodweight'] = 60
+params['recweight'] = 0.5#0.5#135,45
+params['swap1weight'] = 1#100#1#280,93
+params['swap2weight'] = 0.5#1#0.01#1.2,1.14
+params['klweightZ'] = 0#10#0.1#0.121-->0,0.176
 
 batch_size = 100
-nb_epoch = 5000
-eleven_month = True
+nb_epoch = 500
 params['batch_size'] = batch_size
 params['nb_epoch'] = nb_epoch
 
-if eleven_month:
-    params['original_dim'] = 230
-    params['intermediate_dim'] = 120
-else:    
-    params['original_dim'] = 250
-    params['intermediate_dim'] = 150
-params['s_dim'] = 30
-params['l_size'] = 60
-params['latent_dim'] = 30
-params['norm_sim'] = False
+params['original_dim'] = 250
+params['latent_dim'] = 2
+params['intermediate_dim'] = 60
+params['s_dim'] = 2
+params['l_size'] = 30
+
 curtime = strftime("%d%m%y_%H%M%S", localtime())
 log_filename = params['res_path'] +'/'+ curtime + '_' + params['config_file'] + '_keras_distnet.txt'
 weihts_filename = params['res_path'] +'/'+ curtime + '_' + params['config_file'] + '_weights.h5'
@@ -69,27 +64,23 @@ net = DistNet.DistNet(params,outfile,weihts_filename,True)
 data_tags = ['day'+str(i) for i in range(0,250)]
 
 print 'loading data...'
-datafactory = dataFactory_pyprep.dataFactory_pyprep(data_path=params['data'],years_dict=params['years_dict'],data_tags=data_tags,s_mode=1,load_ready_data=False,valid_years=valid_years,eleven_month=eleven_month)
-x_train,id_train,rho1_train,rho2_train = datafactory.get_train_data()
-x_test,id_test,rho1_test,rho2_test = datafactory.get_test_data()
-x_test_vals = x_test#x_test[data_tags].values
+datafactory = dataFactory_pyprep.dataFactory_pyprep(data_path=params['data'],years_dict=params['years_dict'],data_tags=data_tags,s_mode=1,load_ready_data=True)
+x_train,id_train = datafactory.get_train_data()
+x_test,id_test = datafactory.get_test_data()
+x_test_vals = x_test[data_tags].values
 
 print 'train nan',np.sum(np.isnan(x_train))
 print 'test nan',np.sum(np.isnan(x_test_vals))
 
 x_train[np.isnan(x_train)]=0
 x_test_vals[np.isnan(x_test_vals)]=0
-train_std = 0.04
-train_avg = 0.0007
-x_train = np.clip(x_train,train_avg- 4*train_std,train_avg + 4*train_std)
-x_test_vals = np.clip(x_test_vals,train_avg- 4*train_std,train_avg + 4*train_std)
 
 maxSamples = (np.floor(x_train.shape[0]/batch_size)*batch_size).astype(np.int64)
 x_train = x_train[0:maxSamples,:]
 maxSamples = (np.floor(x_test_vals.shape[0]/batch_size)*batch_size).astype(np.int64)
 x_test_vals = x_test_vals[0:maxSamples,:]
 
-loss = net.train(nb_epoch,x_train,x_test_vals,id_train,rho1_train,rho2_train)
+loss = net.train(nb_epoch,x_train,x_test_vals,id_train)
 
 outfile.close()  
 #x_train = x_train.reshape((len(x_train), np.prod(x_train.shape[1:])))
@@ -136,3 +127,4 @@ outfile.close()
 #plt.figure(figsize=(10, 10))
 #plt.imshow(figure, cmap='Greys_r')
 #plt.show()
+

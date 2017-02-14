@@ -7,15 +7,15 @@ import numpy as np
 #from keras import backend as K
 #from keras import objectives
 #from keras.datasets import mnist
-from time import strftime,localtime
+#from time import strftime,localtime
 import sys
 import os
-import KerasModels
-import yaml
-import dataFactory_pyprep
-import keras
+#import KerasModels
+#import yaml
+#import dataFactory_pyprep
+#import keras
 import DistNet
-from keras.models import load_model
+#from keras.models import load_model
 
 home = os.path.expanduser('~')
 
@@ -23,15 +23,21 @@ params = {}
 debug = True
 
 params['config_file'] = sys.argv[1] if len(sys.argv)>1 else 'config_adam_epoch5000.yaml'
-params['data'] = [home +'/FinData/prices_debug.hdf']
-
-#with open('yamls/' + params['config_file'],'r') as f:
-#    params.update(yaml.load(f))
-
-params['res_path'] = home + '/results_nn/VAE'
+#params['data'] = [home +'/FinData/prices_debug.hdf']
+#
+##with open('yamls/' + params['config_file'],'r') as f:
+##    params.update(yaml.load(f))
+#
+#params['res_path'] = home + '/results_nn/VAE'
+params['data'] = '/media/data2/naamahadad/PyData/1976_2015.hdf'#[home +'/FinData/prices_debug.hdf']
+params['res_path'] = '/media/data2/naamahadad/results/Debug'
 params['years_dict'] = {'train_top' : 2012, # 2009
                       'test_bottom' : 2013, # 2010
                       'test_top' : 2015} # 2012
+
+params['BN'] = False
+params['Init'] = 'glorot_uniform'
+params['Activation'] = 'LeakyReLU'
 
 params['recweight'] = 1
 params['swap1weight'] = 1
@@ -84,8 +90,8 @@ net = DistNet.DistNet(params,'','',False)
 #net.VAEencS.load_weights(params['res_path'] +'/weights/231216_215113_config_adam_epoch5000_paper_mb20.yaml_encS_weights.h5')
 #net.DistNet.load_weights(params['res_path'] +'/weights/231216_215113_config_adam_epoch5000.yaml_full_weights.h5')
 
-net.VAEencS.load_weights(params['res_path'] +'/weights/241216_135945_config_adam_epoch5000.yaml_encS_weights.h5')
-net.DistNet.load_weights(params['res_path'] +'/weights/241216_135945_config_adam_epoch5000.yaml_full_weights.h5')
+net.VAEencS.load_weights(params['res_path'] +'/040117_213241_config_adam_epoch5000.yaml_weights.h5_encS_weights.h5')
+net.DistNet.load_weights(params['res_path'] +'/040117_213241_config_adam_epoch5000.yaml_weights.h5_full_weights.h5')
 
 num_ids=10
 nSamples = 100
@@ -125,7 +131,11 @@ zn=np.random.randn(100,params['latent_dim'])
 
 z1_m,z1_std,s1 = net.VAEencS.predict(X1,batch_size=params['batch_size'])
 X11,X11t,X12,Xp2,adv1,adv2 = net.DistNet.predict([X1,X1t,X2,zn,lbls],batch_size=params['batch_size'])
-print 'loss1: '+ str(np.sum(np.square(X11-x1)))+' loss2: '+ str(np.sum(np.square(X11t-x1)))
+print 'loss1: '+ str(np.average(np.square(X11-x1)))+' loss2: '+ str(np.average(np.square(X11t-x1)))
 np.average(np.square(X11-x1),axis=0)
+
+mixinds=np.random.permutation(range(X1.shape[0]))
+print 'loss1: '+ str(np.average(np.square(X11-X1[mixinds,:])))+' loss2: '+ str(np.average(np.square(X11t-X1[mixinds,:])))
+print 'adv1: ',np.average(adv1),' adv2: ',np.average(adv2)
 
 vv=net.DistNet.get_layer(index=2)

@@ -10,10 +10,10 @@ import numpy as np
 from time import strftime,localtime
 import sys
 import os
-import KerasModels
-import yaml
+#import KerasModels
+#import yaml
 import dataFactory_pyprep
-import keras
+#import keras
 import DistNet
 
 home = os.path.expanduser('~')
@@ -22,18 +22,24 @@ params = {}
 debug = True
 
 params['config_file'] = sys.argv[1] if len(sys.argv)>1 else 'config_adam_epoch5000.yaml'
-params['data'] = [home +'/FinData/prices_debug.hdf']
+#params['data'] = [home +'/Data/prices_debug.hdf']
 
-#with open('yamls/' + params['config_file'],'r') as f:
-#    params.update(yaml.load(f))
+##with open('yamls/' + params['config_file'],'r') as f:
+##    params.update(yaml.load(f))
 
-params['res_path'] = home + '/results_nn/VAE'
+#params['res_path'] = home + '/results_nn/VAE'
+
+params['data'] = '/media/data2/naamahadad/PyData/1976_2015.hdf'#[home +'/FinData/prices_debug.hdf']
+params['res_path'] = '/media/data2/naamahadad/results/Debug'
 params['years_dict'] = {'train_top' : 2012, # 2009
                       'test_bottom' : 2013, # 2010
                       'test_top' : 2015} # 2012
+params['BN'] = False
+params['Init'] = 'glorot_normal'
+params['Activation'] = 'tanh'#'tanh'#'LeakyReLU'
 
-params['recweight'] = 0.5
-params['swap1weight'] = 1
+params['recweight'] = 1
+params['swap1weight'] = 0
 params['swap2weight'] = 0#.1#0.01
 params['klweightZ'] = 0#0.1
 
@@ -43,14 +49,15 @@ params['batch_size'] = batch_size
 params['nb_epoch'] = nb_epoch
 
 params['original_dim'] = 5
-params['latent_dim'] = 5
+params['latent_dim'] = 3
 params['intermediate_dim'] = 7
 params['s_dim'] = 2
 params['l_size'] = 5
 
 curtime = strftime("%d%m%y_%H%M%S", localtime())
 log_filename = params['res_path'] +'/'+ curtime + '_' + params['config_file'] + '_keras_distnet.txt'
-weihts_filename = params['res_path'] +'/weights/'+ curtime + '_' + params['config_file']
+#weihts_filename = params['res_path'] +'/weights/'+ curtime + '_' + params['config_file']
+weihts_filename = params['res_path'] +'/'+ curtime + '_' + params['config_file'] + '_weights.h5'
 outfile=open(log_filename,'a')
 
 #vae = KerasModels.VAE(params,batch_size,original_dim,intermediate_dim,latent_dim)
@@ -59,7 +66,7 @@ net = DistNet.DistNet(params,outfile,weihts_filename,True)
 data_tags = ['day'+str(i) for i in range(0,250)]
 
 print 'loading data...'
-datafactory = dataFactory_pyprep.dataFactory_pyprep(data_path=params['data'],years_dict=params['years_dict'],data_tags=data_tags,s_mode=1)
+datafactory = dataFactory_pyprep.dataFactory_pyprep(data_path=params['data'],years_dict=params['years_dict'],data_tags=data_tags,s_mode=1,load_ready_data=True)
 x_train,id_train = datafactory.get_train_data()
 x_test,id_test = datafactory.get_test_data()
 x_test_vals = x_test[data_tags].values
